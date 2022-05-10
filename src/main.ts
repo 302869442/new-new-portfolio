@@ -2,8 +2,17 @@ import "./style.scss"
 import * as THREE from "three"
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls"
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader"
-import { MaterialParameters, Object3D, Side } from "three"
-
+import {
+  MaterialParameters,
+  MeshBasicMaterialParameters,
+  MeshPhysicalMaterial,
+  MeshPhysicalMaterialParameters,
+  PlaneBufferGeometry,
+  ShaderMaterial,
+  ShaderMaterialParameters,
+} from "three"
+import VShader from "./vertex.glsl"
+import fShader from "./fragment.glsl"
 //get the canvas
 const canvas = <HTMLCanvasElement>document.getElementById("canvas")
 
@@ -20,12 +29,12 @@ export class baseScene {
       75,
       innerWidth / innerHeight,
       0.1,
-      1000
+      100000
     )
     this.renderer = new THREE.WebGLRenderer({ canvas: canvas })
     this.pointer = new THREE.Vector2()
     if (!canvas) {
-      this.renderer = new THREE.WebGLRenderer()
+      this.renderer = new THREE.WebGLRenderer({ antialias: true })
       document.body.appendChild(this.renderer.domElement)
     }
     this.raycaster
@@ -94,7 +103,7 @@ export class baseScene {
     return loader.load(path)
   }
 
-  private onMouseMove(e: MouseEvent) {
+  private onMouseMove(e: MouseEvent): void {
     this.pointer.x = (e.clientX / window.innerWidth) * 2 - 1
     this.pointer.y = (e.clientY / window.innerHeight) * 2 - 1
   }
@@ -102,12 +111,21 @@ export class baseScene {
   setMaterialParams(m: THREE.Material, params?: THREE.MaterialParameters) {
     m.setValues(<MaterialParameters>params)
   }
+  logObject(name: string) {
+    console.log(this.scene.getObjectByName(name))
+  }
 
   resize() {
     window.addEventListener("resize", () => this.resize())
     this.renderer.setSize(innerWidth, innerHeight)
     this.renderer.setPixelRatio(devicePixelRatio)
     this.camera.aspect = innerWidth / innerHeight
+  }
+  addFog(f: THREE.FogExp2 | THREE.Fog) {
+    this.scene.fog = f
+  }
+  addGroup(g: THREE.Group) {
+    this.scene.add(g)
   }
   /**
    *
@@ -131,6 +149,7 @@ export class baseScene {
   setCameraPosition(x: number, y: number, z: number) {
     this.camera.position.set(x, y, z)
   }
+
   setVertices(point: THREE.Vector3[], g: THREE.BufferGeometry) {
     g.setFromPoints(point)
     return g
@@ -138,26 +157,63 @@ export class baseScene {
 }
 
 const base = new baseScene(canvas)
-const objects: Object3D[] = []
+const testmap = base.loadTexture("../assets/cool-background.png")
+const cylinderMatProps: MeshBasicMaterialParameters = {
+  transparent: true,
+  opacity: 0.3,
+  color: new THREE.Color("cyan"),
+  side: THREE.DoubleSide,
+}
 
-const circleMaterial = new THREE.MeshBasicMaterial()
+const bridgesMatProps: MeshPhysicalMaterialParameters = {
+  color: new THREE.Color("white"),
+  reflectivity: 1.0,
+  roughness: 0.1,
+  transmission: 1.0,
+  side: THREE.DoubleSide,
+}
+const imageMatProps: ShaderMaterialParameters = {
+  vertexShader: VShader,
+  fragmentShader: fShader,
+  uniforms: {
+    imgTexture: {
+      value: testmap,
+    },
+  },
+}
 
-const g = new THREE.CircleBufferGeometry(20, 20)
+const imageMaterial = new ShaderMaterial()
+const imageGeometry = new THREE.PlaneBufferGeometry(2000, 2000)
 
-base.addObject('test', g, new THREE.MeshBasicMaterial({color: 'white', side: THREE.DoubleSide}))
-base.addObject('test2', g, new THREE.MeshBasicMaterial({color: 'white', side: THREE.DoubleSide}))
-base.addObject('test3', g, new THREE.MeshBasicMaterial({ color: 'white', side: THREE.DoubleSide }))
-base.setObjectPosition('test', 150, 0, 0)
-base.setObjectPosition('test2', -150, 0, 0)
-base.setObjectPosition('test3', 0, 300, 0)
+const cylinderMaterial = new THREE.MeshBasicMaterial()
+const cylinderGeometry = new THREE.CylinderBufferGeometry(
+  2000,
+  2000,
+  10000,
+  200
+)
 
-const line = new THREE.LineLoop(new THREE.BufferGeometry(), new THREE.LineBasicMaterial({color: 'white'}))
-base.Scene.add(line)
+base.setMaterialParams(cylinderMaterial, cylinderMatProps)
+base.setMaterialParams(imageMaterial, imageMatProps)
 
-console.log(base.Scene)
+base.addObject("test", cylinderGeometry, cylinderMaterial)
+base.addObject("test2", cylinderGeometry, cylinderMaterial)
+base.addObject("test3", cylinderGeometry, cylinderMaterial)
+base.addObject("testproject", imageGeometry, imageMaterial)
+base.addGrid(new THREE.GridHelper(10000, 125, "white"))
 
-base.setCameraPosition(0, 0, 500)
-base.addLight(new THREE.AmbientLight())
+base.setObjectPosition("test", 10000, 0, 0)
+base.setObjectPosition("test2", 0, 0, -15000)
+base.setObjectPosition("test3", -10000, 0, 0)
+
+const fog = new THREE.FogExp2(0xfffff, 1)
+// base.addFog(fog)
+
+base.setCameraPosition(0, 0, 2500)
+// base.addLight(new THREE.AmbientLight())
+
+const projects: Project[] = []
+projects.push()
 
 interface Project {
   name: string
@@ -169,3 +225,89 @@ interface Skill {
   name: string
   model: any
 }
+
+class ProjectManager {
+  projects: Project[]
+  constructor() {
+    this.projects = []
+  }
+
+  public addProject(name: string, description: string) {}
+}
+
+
+
+
+class BridgeManager {
+  bridges: THREE.Group
+  bridgeGeometry: PlaneBufferGeometry
+  bridgeMaterial: MeshPhysicalMaterial
+
+  constructor() {
+    this.bridges = new THREE.Group()
+    this.bridgeGeometry = new PlaneBufferGeometry()
+    this.bridgeMaterial = new MeshPhysicalMaterial()
+    this.setMaterialParams(this.bridgeMaterial, bridgesMatProps)
+  }
+
+  setMaterialParams = (
+    m: THREE.MeshPhysicalMaterial,
+    params: THREE.MeshPhysicalMaterialParameters
+  ) => {
+    m.setValues(params)
+  }
+  setPosition = (index: number, x: number, y: number, z: number) => {
+    this.bridges.children[index].position.set(x, y, z)
+  }
+  setRotation = (index: number, x: number, y: number, z: number) => {
+    this.bridges.children[index].rotation.set(x, y, z)
+  }
+
+  public addBridge(width: number, length: number) {
+    const bridge = new THREE.Mesh(this.bridgeGeometry, this.bridgeMaterial)
+    bridge.geometry.parameters.width = length
+    bridge.geometry.parameters.height = width
+    this.bridges.add(bridge)
+  }
+}
+class PillarManager {
+  pillars: THREE.Group
+  bridgeGeometry: PlaneBufferGeometry
+  bridgeMaterial: MeshPhysicalMaterial
+
+  constructor() {
+    this.pillars = new THREE.Group()
+    this.bridgeGeometry = new PlaneBufferGeometry()
+    this.bridgeMaterial = new MeshPhysicalMaterial()
+    this.setMaterialParams(this.bridgeMaterial, bridgesMatProps)
+  }
+
+  setMaterialParams = (
+    m: THREE.MeshPhysicalMaterial,
+    params: THREE.MeshPhysicalMaterialParameters
+  ) => {
+    m.setValues(params)
+  }
+  setPosition = (index: number, x: number, y: number, z: number) => {
+    this.pillars.children[index].position.set(x, y, z)
+  }
+  setRotation = (index: number, x: number, y: number, z: number) => {
+    this.pillars.children[index].rotation.set(x, y, z)
+  }
+
+  public addBridge(width: number, length: number) {
+    const bridge = new THREE.Mesh(this.bridgeGeometry, this.bridgeMaterial)
+    bridge.geometry.parameters.width = length
+    bridge.geometry.parameters.height = width
+    this.pillars.add(bridge)
+  }
+}
+
+
+const bridgeManager = new BridgeManager()
+bridgeManager.addBridge(18000, 1500)
+bridgeManager.setPosition(0, 0, 2000, 0)
+
+base.addGroup(bridgeManager.bridges)
+console.log(bridgeManager.bridges);
+
