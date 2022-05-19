@@ -17,6 +17,7 @@
   "dependencies": {
     "@prisma/client": "^3.14.0",
     "@types/three": "^0.139.0",
+    "gsap": "^3.10.4",
     "three": "^0.139.2"
   }
 }

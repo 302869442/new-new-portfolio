@@ -8,7 +8,7 @@ export class BridgeManager {
   
     constructor() {
       this.bridges = new THREE.Group()
-      this.bridgeGeometry = new THREE.PlaneBufferGeometry(1500, 2000)
+      this.bridgeGeometry = new THREE.PlaneBufferGeometry(18000, 3000)
       this.bridgeMaterial = new THREE.MeshBasicMaterial({side: THREE.DoubleSide})
       //   this.setMaterialParams(this.bridgeMaterial, bridgesMatProps)
     }

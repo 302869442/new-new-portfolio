@@ -6,6 +6,7 @@ import { HelperManager } from "./managers/HelperManager"
 import { BridgeManager } from "./managers/BridgeManager"
 import { LightManager } from "./managers/LightManager"
 import { LineManager } from "./managers/LineManager"
+import gsap from "gsap"
 // import { projects } from "./databaseManager"
 
 const canvas = <HTMLCanvasElement>document.getElementById("canvas")
@@ -41,13 +42,12 @@ helperManager.helpers.forEach(helper => {
 
 function SceneConfiguration() {
   sceneManager.createScene(innerWidth, innerHeight)
-  sceneManager.setCameraPosition(0, 0, 2500)
+  sceneManager.setCameraPosition(20000, 0, 25000)
   sceneManager.EnableControls()
   sceneManager.AddObjectGroup(pillarManager.pillars, 'pillars')
   sceneManager.AddObjectGroup(bridgeManager.bridges, 'bridges')
   sceneManager.AddObjectGroup(lightManager.lights, 'lights')
   sceneManager.AddObjectGroup(lineManager.lines, 'lines')
-  sceneManager.Camera.lookAt(bridgeManager.bridges.children[0].position)
   sceneManager.logAllObjects()
 }
 function pillarConfiguration() {
@@ -61,11 +61,13 @@ function pillarConfiguration() {
 }
 function BridgeConfiguration() {
   bridgeManager.setMaterialParams(bridgesMatProps)
+
   
   for (let i = 0; i < 3; i++) {
     bridgeManager.addBridge(2000, 15000)
   }
-  
+  bridgeManager.setPosition(0, 0, 5000, -10000)
+  bridgeManager.setRotation(0, 1.6, 0, 0.8)
 
 }
 function LightConfiguration() {
@@ -76,11 +78,14 @@ function LineConfiguration() {
   // lineManager.addLine()
 }
 
+
 pillarConfiguration()
 BridgeConfiguration()
 LightConfiguration()
 LineConfiguration()
 SceneConfiguration()
+gsap.to(sceneManager.Camera.position, { duration: 2, x: 0, y: 50000, z: 0 })
+gsap.to(sceneManager.Camera.rotation, { duration: 2, x: -1.6, y:0, z:0})
 
 
 
