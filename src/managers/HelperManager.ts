@@ -1,12 +1,12 @@
 import * as THREE from "three"
-import { AxesHelper, BoxHelper, GridHelper } from "three";
+import { AxesHelper, BoxHelper, GridHelper, Object3D } from "three";
 
 
 export class HelperManager {
-    helpers: any[];
+    helpers: Object3D[];
     
     constructor() {
-        this.helpers = new Array<any>();
+        this.helpers = new Array<Object3D>();
     }
 
     /**
