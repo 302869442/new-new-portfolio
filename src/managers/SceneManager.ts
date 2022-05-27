@@ -1,10 +1,10 @@
 import * as THREE from "three"
-import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer"
+import { EffectComposer, Pass } from "three/examples/jsm/postprocessing/EffectComposer"
 import { UnrealBloomPass } from "three/examples/jsm/postprocessing/UnrealBloomPass"
 import {OrbitControls} from "three/examples/jsm/controls/OrbitControls"
 
 
-const bloomPass = new UnrealBloomPass( new THREE.Vector2( window.innerWidth, window.innerHeight ), 1.5, 0.4, 0.85 );
+
 
 
 export class SceneManager {
@@ -21,16 +21,16 @@ export class SceneManager {
         this.renderer = new THREE.WebGLRenderer({ antialias: true, canvas: canvas })
         this.pointer = new THREE.Vector2()
         this.raycaster = new THREE.Raycaster()
-        // if (EnablePostProcessing === true) {
-        //     this.composer = new EffectComposer(this.renderer)
-        //     this.composer.addPass(bloomPass)
-        //     this.PostProcessingAnimate()
-        //     return
-        // }
-        if (EnablePostProcessing === false) {
-            this.animate(true)
+        if (EnablePostProcessing === true) {
+            this.composer = new EffectComposer(this.renderer)
+            
+            this.PostProcessingAnimate()
             return
         }
+        if (EnablePostProcessing === false) {
+            return
+        }
+        this.animate(false)
         this.checkAllowedRaycasting(EnableRaycasting)
 
     }
@@ -77,8 +77,13 @@ export class SceneManager {
     }
     public resize(width: number, height: number) {
         this.renderer.setSize(width, height)
+        if (this.composer !== undefined) {
+            this.composer.setSize(width, height)
+            
+        }
         this.renderer.setPixelRatio(devicePixelRatio)
         this.camera.aspect = width / height
+        this.camera.updateProjectionMatrix()
     }
     private PostProcessingAnimate() {
         requestAnimationFrame(() => this.PostProcessingAnimate())
@@ -88,8 +93,11 @@ export class SceneManager {
     private animate(raycaster: boolean) {
         requestAnimationFrame(() => this.animate(raycaster))
         this.renderer.render(this.scene, this.camera)
+        if (this.composer !== undefined) {
+            this.composer.render()
+        }
         if (raycaster == true) {
-            this.checkIntersections()
+            // this.checkIntersections()
         }
     }
     private checkAllowedRaycasting(enabled: boolean) {
@@ -110,6 +118,9 @@ export class SceneManager {
             }
         }
 
+    }
+    public addPass(pass: Pass) {
+        this.composer.addPass(pass)
     }
     public logAllObjects() {
         console.log(this.scene.children);
